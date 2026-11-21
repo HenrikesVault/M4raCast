@@ -1,0 +1,757 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --tv-bg: #0b0d13;
+    --tv-surface: #141721;
+    --tv-surface2: #1c2130;
+    --tv-surface-hover: #262c40;
+    --tv-accent: #7c3aed;
+    --tv-accent-hover: #9333ea;
+    --tv-accent-active: #6d28d9;
+    --tv-text: #f3f4f6;
+    --tv-text-muted: #9ca3af;
+    --tv-danger: #ef4444;
+    --tv-danger-bg: rgba(239, 68, 68, 0.2);
+    --tv-success: #22c55e;
+    --tv-warning: #f59e0b;
+    --tv-divider: #283042;
+    --tv-focus-border: #a855f7;
+    --tv-focus-glow: rgba(168, 85, 247, 0.65);
+    --hud-bg: rgba(11, 13, 19, 0.94);
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--tv-bg);
+    color: var(--tv-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================================
+   HIGH-VISIBILITY TV D-PAD / REMOTE FOCUS STYLING (Chromium 53 Safe)
+   ========================================================================= */
+:focus {
+    outline: 5px solid #ffffff !important;
+    outline-offset: 4px !important;
+    border-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0 5px #a855f7, 0 0 45px rgba(168, 85, 247, 1) !important;
+    box-shadow: 0 0 0 5px #a855f7, 0 0 45px rgba(168, 85, 247, 1) !important;
+    -webkit-transform: scale(1.08) !important;
+    transform: scale(1.08) !important;
+    z-index: 100 !important;
+}
+
+/* CRITICAL: Never apply transforms to the video element on webOS —
+   CSS transform breaks the hardware video punch-through plane */
+#stream-video:focus {
+    -webkit-transform: none !important;
+    transform: none !important;
+}
+
+.tv-focused {
+    outline: 5px solid #ffffff !important;
+    outline-offset: 4px !important;
+    border-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0 5px #a855f7, 0 0 45px rgba(168, 85, 247, 1) !important;
+    box-shadow: 0 0 0 5px #a855f7, 0 0 45px rgba(168, 85, 247, 1) !important;
+    -webkit-transform: scale(1.08) !important;
+    transform: scale(1.08) !important;
+    z-index: 100 !important;
+}
+
+button:focus, button.tv-focused, .tv-btn:focus, .tv-btn.tv-focused, .hud-btn:focus, .hud-btn.tv-focused {
+    background-color: #9333ea !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.tv-btn-danger:focus, .tv-btn-danger.tv-focused, .hud-btn-danger:focus, .hud-btn-danger.tv-focused {
+    background-color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+    color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0 5px #ef4444, 0 0 45px rgba(239, 68, 68, 1) !important;
+    box-shadow: 0 0 0 5px #ef4444, 0 0 45px rgba(239, 68, 68, 1) !important;
+}
+
+input:focus, input.tv-focused {
+    background-color: #2b3347 !important;
+    border-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0 5px #3b82f6, 0 0 35px rgba(59, 130, 246, 0.9) !important;
+    box-shadow: 0 0 0 5px #3b82f6, 0 0 35px rgba(59, 130, 246, 0.9) !important;
+}
+
+/* =========================================================================
+   SCREENS (Fixed without inset:0 for webOS WebKit/Blink compatibility)
+   ========================================================================= */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+}
+.screen.active {
+    display: flex;
+}
+
+/* =========================================================================
+   TV HOME / CONNECT SCREEN (Centered, Large TV-scale layout)
+   ========================================================================= */
+.tv-home-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    box-sizing: border-box;
+    background: radial-gradient(circle at center, #171b29 0%, #0b0d13 70%);
+}
+
+.tv-brand {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.tv-title {
+    font-size: 46px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.tv-subtitle {
+    font-size: 20px;
+    color: var(--tv-text-muted);
+    margin-top: 12px;
+    line-height: 1.5;
+    max-width: 680px;
+}
+
+/* TV Main Card */
+.tv-card {
+    background: var(--tv-surface);
+    border: 2px solid var(--tv-divider);
+    border-radius: var(--radius-lg);
+    padding: 40px 48px;
+    width: 740px;
+    max-width: 90vw;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+}
+
+.tv-form-grid {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+.tv-field-large {
+    -webkit-flex: 2.3;
+    flex: 2.3;
+    margin-right: 20px;
+}
+.tv-field-small {
+    -webkit-flex: 1;
+    flex: 1;
+}
+
+.tv-field {
+    margin-bottom: 24px;
+}
+.tv-field label {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--tv-text-muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.hint-muted {
+    font-weight: normal;
+    text-transform: none;
+    opacity: 0.8;
+}
+
+.tv-input {
+    width: 100%;
+    min-height: 64px;
+    background: var(--tv-surface2);
+    border: 2px solid var(--tv-divider);
+    border-radius: var(--radius-md);
+    color: #ffffff;
+    font-size: 24px;
+    padding: 14px 20px;
+    outline: none;
+    transition: background 0.15s ease-out, border-color 0.15s ease-out;
+}
+.tv-input:focus, .tv-input.tv-focused {
+    background: #242b3d;
+}
+
+/* TV Button (Big, Prominent, Center) */
+.tv-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    font-size: 26px;
+    font-weight: 600;
+    min-height: 72px;
+    padding: 18px 36px;
+    cursor: pointer;
+    transition: background 0.15s ease-out, transform 0.15s ease-out, box-shadow 0.15s ease-out;
+    width: 100%;
+    text-align: center;
+}
+
+.tv-btn-primary {
+    background: var(--tv-accent);
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+}
+.tv-btn-primary:hover {
+    background: var(--tv-accent-hover);
+}
+
+.tv-btn-danger {
+    background: var(--tv-danger-bg);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+.tv-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.35);
+}
+
+.tv-endpoint-hint {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 16px;
+    color: var(--tv-text-muted);
+}
+.tv-endpoint-hint code {
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    color: #ffffff;
+    font-family: monospace;
+    font-size: 16px;
+}
+
+/* TV Footer Remote Legend */
+.tv-footer-hint {
+    margin-top: 36px;
+    font-size: 16px;
+    color: var(--tv-text-muted);
+    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.hint-key {
+    background: var(--tv-surface);
+    border: 1px solid var(--tv-divider);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 15px;
+}
+.hint-sep {
+    margin: 0 4px;
+    opacity: 0.4;
+}
+
+/* webOS colour-button hint chips */
+.hint-red    { color: #e74c3c; font-weight: bold; }
+.hint-green  { color: #2ecc71; font-weight: bold; }
+.hint-yellow { color: #f1c40f; font-weight: bold; }
+.hint-blue   { color: #3498db; font-weight: bold; }
+
+/* =========================================================================
+   TV MODAL POPUP (CONNECTING DIALOG)
+   ========================================================================= */
+.tv-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(7, 8, 12, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 30px;
+}
+
+.tv-modal-card {
+    background: var(--tv-surface);
+    border: 2px solid var(--tv-divider);
+    border-radius: var(--radius-lg);
+    padding: 36px 44px;
+    width: 660px;
+    max-width: 92vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+    text-align: center;
+}
+
+.tv-spinner {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 20px;
+    border: 4px solid var(--tv-divider);
+    border-top-color: var(--tv-accent);
+    border-radius: 50%;
+    animation: tvSpin 0.75s linear infinite;
+}
+@keyframes tvSpin {
+    to { transform: rotate(360deg); }
+}
+
+.tv-modal-card h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+.tv-badge-target {
+    display: inline-block;
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 18px;
+    font-family: monospace;
+    color: var(--tv-accent);
+    margin-bottom: 24px;
+}
+
+.tv-steps-list {
+    text-align: left;
+    margin-bottom: 24px;
+}
+
+.tv-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 18px;
+    color: var(--tv-text-muted);
+    transition: background 0.15s;
+}
+.tv-step.active {
+    color: #ffffff;
+    background: var(--tv-surface2);
+    font-weight: 600;
+}
+.tv-step.done {
+    color: var(--tv-success);
+}
+.tv-step.error {
+    color: var(--tv-danger);
+    background: var(--tv-danger-bg);
+}
+
+.step-icon {
+    font-size: 20px;
+    line-height: 1;
+    width: 24px;
+    text-align: center;
+}
+
+.tv-debug-box {
+    background: #07090e;
+    border: 1px solid var(--tv-divider);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    height: 150px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 14px;
+    text-align: left;
+    margin-bottom: 24px;
+    color: #a1a1aa;
+}
+
+.log-line { margin-bottom: 4px; word-break: break-all; }
+.log-line.info { color: #93c5fd; }
+.log-line.success { color: #86efac; }
+.log-line.error { color: #fca5a5; }
+
+.tv-modal-actions {
+    display: flex;
+    justify-content: center;
+}
+.tv-modal-actions .tv-btn {
+    min-height: 64px;
+    font-size: 22px;
+}
+
+/* =========================================================================
+   VIEWER SCREEN
+   ========================================================================= */
+#screen-viewer {
+    background: transparent !important;
+}
+
+#viewer-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent !important;
+    overflow: hidden;
+}
+
+#video-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+}
+
+#stream-canvas, #crop-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 0.1s ease-out;
+    display: block;
+}
+
+/* stream-video must NEVER have transform, transition, or opaque background
+   on webOS hardware: CSS transforms break the hardware video punch-through plane */
+#stream-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    -webkit-transform: none !important;
+    transform: none !important;
+    -webkit-transition: none !important;
+    transition: none !important;
+}
+
+#viewer-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 1;
+    transition: opacity 0.25s;
+    z-index: 50;
+}
+#viewer-hud.hidden {
+    opacity: 0;
+}
+
+.hud-top, .hud-bottom {
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    padding: 20px 32px;
+    background: linear-gradient(var(--hud-bg), transparent);
+}
+.hud-bottom {
+    background: linear-gradient(transparent, var(--hud-bg));
+    justify-content: center;
+}
+
+.hud-agent-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-left: 20px;
+}
+
+.hud-stats {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+    font-size: 16px;
+    font-family: monospace;
+    color: var(--tv-text-muted);
+}
+.hud-stats span {
+    background: var(--tv-surface2);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--tv-divider);
+}
+
+.hud-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.hud-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--tv-surface);
+    border: 2px solid var(--tv-divider);
+    border-radius: var(--radius-md);
+    color: var(--tv-text);
+    font-size: 18px;
+    font-weight: 600;
+    min-height: 56px;
+    padding: 12px 22px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.hud-btn:hover {
+    background: var(--tv-surface-hover);
+    color: #ffffff;
+}
+.hud-btn.hud-btn-danger {
+    background: var(--tv-danger-bg);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+/* SIDE PANEL / CROP PANEL */
+.side-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 440px;
+    height: 100%;
+    background: var(--tv-surface);
+    border-left: 2px solid var(--tv-divider);
+    padding: 32px 28px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.6);
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+.panel-header h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+}
+.close-btn {
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    border-radius: var(--radius-sm);
+    color: var(--tv-text);
+    font-size: 20px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.panel-section {
+    margin-bottom: 28px;
+}
+.panel-section label {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--tv-text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.preset-grid {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+}
+.preset-btn {
+    width: 31%;
+    margin-bottom: 10px;
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    border-radius: var(--radius-sm);
+    color: var(--tv-text);
+    padding: 12px 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+}
+.preset-btn.active {
+    background: var(--tv-accent);
+    color: #ffffff;
+    border-color: var(--tv-accent);
+}
+
+.select-input {
+    width: 100%;
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    border-radius: var(--radius-sm);
+    color: #ffffff;
+    font-size: 18px;
+    padding: 14px 18px;
+    outline: none;
+}
+
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 16px;
+}
+.slider-row input[type="range"] {
+    flex: 1;
+    height: 10px;
+    accent-color: var(--tv-accent);
+}
+.slider-val {
+    min-width: 50px;
+    text-align: right;
+    font-family: monospace;
+    font-size: 16px;
+}
+
+.crop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.crop-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.crop-label {
+    width: 70px;
+    font-size: 15px;
+    color: var(--tv-text-muted);
+}
+.crop-row input[type="range"] {
+    flex: 1;
+    height: 10px;
+    accent-color: var(--tv-accent);
+}
+.num-input {
+    width: 70px;
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    border-radius: var(--radius-sm);
+    color: #ffffff;
+    font-size: 16px;
+    padding: 6px 10px;
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+}
+.btn {
+    flex: 1;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+.btn-secondary {
+    background: var(--tv-surface2);
+    border: 1px solid var(--tv-divider);
+    color: #ffffff;
+}
+
+/* =========================================================================
+   CHROMIUM 68 (webOS 5.40.97) FLEXBOX SPACING COMPATIBILITY
+   (Chromium 68 does not support 'gap' in display:flex, only in display:grid)
+   ========================================================================= */
+.tv-btn > * + * { margin-left: 14px; }
+.tv-step > * + * { margin-left: 14px; }
+.hud-controls > * + * { margin-left: 16px; }
+.hud-btn > * + * { margin-left: 10px; }
+.hud-stats > * + * { margin-left: 20px; }
+.slider-row > * + * { margin-left: 16px; }
+.crop-row > * + * { margin-left: 14px; }
+.crop-grid > * + * { margin-top: 14px; }
+.action-buttons > * + * { margin-left: 12px; }
+.tv-footer-hint > * { margin: 4px 6px; }
+
+/* =========================================================================
+   END STREAM CONFIRMATION MODAL
+   ========================================================================= */
+.tv-confirm-card {
+    width: 580px;
+}
+.tv-confirm-msg {
+    font-size: 22px;
+    color: var(--tv-text-muted);
+    margin: 16px 0 28px;
+    line-height: 1.4;
+}
+.tv-confirm-actions {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-justify-content: center;
+    justify-content: center;
+}
+.tv-confirm-actions .tv-btn {
+    min-width: 180px;
+    min-height: 64px;
+    font-size: 22px;
+}
+.tv-confirm-actions > * + * {
+    margin-left: 20px;
+}

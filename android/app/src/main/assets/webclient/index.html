@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="webos-system-version" content="1.0">
+    <title>M4raCast — Screen Receiver</title>
+    <link rel="stylesheet" href="css/main.css">
+    <!-- webOS SDK: provides window.webOS, key registration, etc. Available on-device only -->
+    <script src="$webOS_bundled/webOSTVjs-1.2.10/webOSTV.js" onerror="console.info('[webOS] SDK not found — running off-device')"></script>
+    <!-- webOS platform integrations (remote keys, cursor, lifecycle) -->
+    <script src="js/webos.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect fill='%230F0C1B' width='24' height='24'/><path fill='%239D4EDD' d='M21 3H3C1.9 3 1 3.9 1 5v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM1 18v3h3c0-1.66-1.34-3-3-3zM1 14v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z'/></svg>">
+</head>
+<body class="tv-mode">
+
+<!-- TV Connect Screen -->
+<div id="screen-connect" class="screen active">
+    <main class="tv-home-container">
+        <!-- Brand Header -->
+        <div class="tv-brand">
+            <h1 class="tv-title">Welcome to M4raCast</h1>
+            <p class="tv-subtitle">Enter the details given by the android agent. You can use your remote control to navigate.</p>
+        </div>
+
+        <!-- TV Connection Card -->
+        <div class="tv-card" id="tv-main-card">
+            <div id="manual-connect-group">
+                <div class="tv-form-grid">
+                    <div class="tv-field tv-field-large">
+                        <label for="input-ip">Agent IP Address</label>
+                        <input type="text" id="input-ip" class="tv-input" placeholder="e.g. 192.168.0.7" tabindex="1" autocomplete="off" spellcheck="false">
+                    </div>
+
+                    <div class="tv-field tv-field-small">
+                        <label for="input-port">Port</label>
+                        <input type="number" id="input-port" class="tv-input" placeholder="46283" value="46283" tabindex="2">
+                    </div>
+                </div>
+            </div>
+
+            <div class="tv-field" id="field-password">
+                <label for="input-password">Security Password <span class="hint-muted" id="password-hint">(if protected)</span></label>
+                <input type="password" id="input-password" class="tv-input" placeholder="Leave blank if not protected" tabindex="3" autocomplete="new-password">
+            </div>
+
+            <button id="btn-connect-main" class="tv-btn tv-btn-primary" tabindex="4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                <span>Connect to Screen</span>
+            </button>
+
+            <!-- Quick Endpoint Hint -->
+            <div class="tv-endpoint-hint" id="endpoint-hint-box">
+                <span>Direct Endpoint:</span>
+                <code>/stream/{ip}:{port}</code>
+            </div>
+        </div>
+
+        <!-- TV Remote D-Pad Navigation Hint Footer -->
+        <footer class="tv-footer-hint">
+            <span class="hint-key">▲ ▼ ◄ ►</span> Navigate
+            <span class="hint-sep">•</span>
+            <span class="hint-key">OK</span> Select
+            <span class="hint-sep">•</span>
+            <span class="hint-key">Back</span> Exit
+            <span class="hint-sep">•</span>
+            <span class="hint-key hint-red">■</span> Disconnect &nbsp;
+            <span class="hint-key hint-green">■</span> Audio &nbsp;
+            <span class="hint-key hint-yellow">■</span> Fit &nbsp;
+            <span class="hint-key hint-blue">■</span> Fullscreen
+        </footer>
+    </main>
+</div>
+
+<!-- Connecting Modal Popup (With Realtime Debug Dialogs & Cancel) -->
+<div id="modal-connecting" class="tv-modal-backdrop" style="display:none">
+    <div class="tv-modal-card">
+        <div class="tv-spinner"></div>
+
+        <h2 id="connecting-title">Connecting to Screen...</h2>
+        <div id="connecting-target" class="tv-badge-target">192.168.0.7:46283</div>
+
+        <!-- Step-by-Step Status List -->
+        <div class="tv-steps-list">
+            <div class="tv-step" id="step-probe">
+                <span class="step-icon">○</span>
+                <span class="step-label">1. Probing host endpoint (/m4racast/v1/info)...</span>
+            </div>
+            <div class="tv-step" id="step-auth">
+                <span class="step-icon">○</span>
+                <span class="step-label">2. Authenticating session token...</span>
+            </div>
+            <div class="tv-step" id="step-decoder">
+                <span class="step-icon">○</span>
+                <span class="step-label">3. Initializing video decoder &amp; audio context...</span>
+            </div>
+            <div class="tv-step" id="step-ws">
+                <span class="step-icon">○</span>
+                <span class="step-label">4. Establishing WebSocket stream handshake...</span>
+            </div>
+        </div>
+
+        <!-- Real-Time Debug Terminal Box -->
+        <div class="tv-debug-box" id="tv-debug-logs">
+            <div class="log-line info">[System] Ready to establish session...</div>
+        </div>
+
+        <!-- Cancel / Abort Button -->
+        <div class="tv-modal-actions">
+            <button id="btn-cancel-connecting" class="tv-btn tv-btn-danger" tabindex="10">
+                <span>Cancel Connection</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- End Stream Confirmation Modal -->
+<div id="modal-confirm-disconnect" class="tv-modal-backdrop" style="display:none">
+    <div class="tv-modal-card tv-confirm-card">
+        <h2>End Stream?</h2>
+        <p class="tv-confirm-msg">Are you sure you want to end the stream?</p>
+        <div class="tv-confirm-actions">
+            <button id="btn-confirm-disconnect-yes" class="tv-btn tv-btn-danger" tabindex="50">
+                <span>Disconnect</span>
+            </button>
+            <button id="btn-confirm-disconnect-no" class="tv-btn tv-btn-primary" tabindex="51">
+                <span>Cancel</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Viewer Screen -->
+<div id="screen-viewer" class="screen">
+    <div id="viewer-container">
+        <!-- Render Surface (Canvas or Video) -->
+        <div id="video-wrapper">
+            <canvas id="stream-canvas"></canvas>
+            <video id="stream-video" autoplay muted playsinline style="display:none"></video>
+            <canvas id="crop-canvas" style="display:none"></canvas>
+        </div>
+
+        <!-- TV Viewer HUD Overlay -->
+        <div id="viewer-hud">
+            <div class="hud-top">
+                <button id="btn-disconnect" class="hud-btn hud-btn-danger" title="Disconnect" tabindex="20">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    <span>Disconnect</span>
+                </button>
+                <div class="hud-agent-name" id="hud-agent-name">M4raCast</div>
+                <div class="hud-stats" id="hud-stats">
+                    <span id="stat-fps">— fps</span>
+                    <span id="stat-resolution">—×—</span>
+                    <span id="stat-latency">— ms</span>
+                </div>
+            </div>
+
+            <div class="hud-bottom">
+                <div class="hud-controls">
+                    <button class="hud-btn" id="btn-audio" title="Toggle Audio (Mute / Unmute)" tabindex="21">
+                        <svg id="icon-audio-on" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                        <svg id="icon-audio-off" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+                            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                        </svg>
+                        <span id="label-audio">Audio</span>
+                    </button>
+
+                    <button class="hud-btn" id="btn-fit" title="Fit to Screen" tabindex="22">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 12h-2v3h-3v2h5v-5zM7 9h3V7H5v5h2V9zm14-6H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z"/></svg>
+                        <span>Fit</span>
+                    </button>
+
+                    <button class="hud-btn" id="btn-rotate" title="Rotate 90°" tabindex="23">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.11 8.53L5.7 7.11C4.8 8.27 4.24 9.61 4.07 11h2.02c.14-.87.49-1.72.95-2.47zM6.09 13H4.07c.17 1.39.72 2.73 1.62 3.89l1.41-1.42c-.52-.75-.82-1.6-.95-2.47zm1.02 5.36c1.16.9 2.51 1.45 3.89 1.63v-2.02c-.87-.14-1.72-.49-2.47-.95l-1.42 1.34zm6.89 1.63c1.39-.17 2.74-.73 3.9-1.63l-1.41-1.41c-.75.46-1.6.81-2.47.95v2.09zm4.29-3.04l1.42 1.42c.9-1.16 1.45-2.5 1.62-3.89h-2.02c-.14.87-.49 1.72-.95 2.47zM17.91 11h2.02c-.17-1.39-.72-2.73-1.62-3.89l-1.41 1.42c.46.75.81 1.6.95 2.47zm-1.02-5.36c-1.16-.9-2.51-1.45-3.89-1.63v2.02c.87.14 1.72.49 2.47.95l1.42-1.34zM11 4.01c-1.39.17-2.74.73-3.9 1.63l1.41 1.41c.75-.46 1.6-.81 2.47-.95V4.01z"/></svg>
+                        <span>Rotate</span>
+                    </button>
+
+                    <button class="hud-btn" id="btn-crop" title="Crop &amp; Format" tabindex="24">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/></svg>
+                        <span>Format &amp; Crop</span>
+                    </button>
+
+                    <button class="hud-btn" id="btn-fullscreen" title="Fullscreen" tabindex="25">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                        <span>Fullscreen</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Precision Crop Panel -->
+    <div id="crop-panel" class="side-panel" style="display:none">
+        <div class="panel-header">
+            <h3>Format, Crop &amp; Display</h3>
+            <button id="btn-close-crop" class="close-btn" title="Close" tabindex="30">✕</button>
+        </div>
+
+        <div class="panel-section">
+            <label>Aspect Ratio Presets</label>
+            <div class="preset-grid">
+                <button class="preset-btn active" data-preset="original" tabindex="31">Original</button>
+                <button class="preset-btn" data-preset="16:9" tabindex="32">16:9 TV / PC</button>
+                <button class="preset-btn" data-preset="16:10" tabindex="33">16:10 Display</button>
+                <button class="preset-btn" data-preset="4:3" tabindex="34">4:3 Standard</button>
+                <button class="preset-btn" data-preset="21:9" tabindex="35">21:9 Ultrawide</button>
+                <button class="preset-btn" data-preset="9:16" tabindex="36">9:16 Mobile</button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <label>Display Scaling</label>
+            <select id="scale-mode" class="select-input" tabindex="37">
+                <option value="fit">Fit to Screen (Preserve Aspect)</option>
+                <option value="fill">Fill Screen (Cover)</option>
+                <option value="original">Original Size (1:1 Pixels)</option>
+                <option value="custom">Custom Zoom</option>
+            </select>
+            <div id="custom-zoom-row" style="display:none; margin-top:12px">
+                <div class="slider-row">
+                    <span>Zoom</span>
+                    <input type="range" id="zoom-slider" min="50" max="400" value="100" tabindex="38">
+                    <span id="zoom-label" class="slider-val">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <label>Audio &amp; Volume</label>
+            <div class="slider-row">
+                <span>Volume</span>
+                <input type="range" id="volume-slider" min="0" max="100" value="100" tabindex="39">
+                <span id="volume-label" class="slider-val">100%</span>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <label>Boundary Crop (px)</label>
+            <div class="crop-grid">
+                <div class="crop-row">
+                    <span class="crop-label">Top</span>
+                    <input type="range" id="crop-top" min="0" max="800" value="0" tabindex="40">
+                    <input type="number" id="crop-top-num" min="0" max="800" value="0" class="num-input">
+                </div>
+                <div class="crop-row">
+                    <span class="crop-label">Bottom</span>
+                    <input type="range" id="crop-bottom" min="0" max="800" value="0" tabindex="41">
+                    <input type="number" id="crop-bottom-num" min="0" max="800" value="0" class="num-input">
+                </div>
+                <div class="crop-row">
+                    <span class="crop-label">Left</span>
+                    <input type="range" id="crop-left" min="0" max="800" value="0" tabindex="42">
+                    <input type="number" id="crop-left-num" min="0" max="800" value="0" class="num-input">
+                </div>
+                <div class="crop-row">
+                    <span class="crop-label">Right</span>
+                    <input type="range" id="crop-right" min="0" max="800" value="0" tabindex="43">
+                    <input type="number" id="crop-right-num" min="0" max="800" value="0" class="num-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="action-buttons">
+                <button id="btn-reset-crop" class="btn btn-secondary" tabindex="44">Reset Crop</button>
+                <button id="btn-center-view" class="btn btn-secondary" tabindex="45">Center View</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/bundle.js"></script>
+</body>
+</html>

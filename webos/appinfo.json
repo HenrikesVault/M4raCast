@@ -1,0 +1,15 @@
+{
+  "id": "com.m4racast.receiver",
+  "version": "1.0.0",
+  "vendor": "M4raCast",
+  "type": "web",
+  "main": "index.html",
+  "title": "M4raCast",
+  "icon": "icon.png",
+  "largeIcon": "icon-large.png",
+  "resolution": "1920x1080",
+  "transparent": false,
+  "disableBackHistoryAPI": true,
+  "requiredACG": []
+}
+
